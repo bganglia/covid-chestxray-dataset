@@ -2,4 +2,4 @@ language: python
 versions:
   - 3.7
 scripts:
-  py.test tests/test_dataloader.py
+  py.test scripts/test_dataloader.py
