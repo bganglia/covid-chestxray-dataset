@@ -3,6 +3,7 @@ from selenium import webdriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.action_chains import ActionChains
+from urllib.request import urlretrieve
 from copy import deepcopy
 from urllib.parse import urlparse
 import sys
@@ -10,12 +11,36 @@ import time
 import pdb
 import pandas as pd
 import numpy as np
+import argparse
 from PIL import Image
 import urllib.request
 import matplotlib.pyplot as plt
+import argparse
+
+"""
+
+Usage:
+
+First download the correct chromedriver for your operating system from here:
+https://sites.google.com/a/chromium.org/chromedriver/
+
+Make sure it is for the same version as your Chrome installation.
+
+Extract it and put it in the same directory as this file.
+
+Then, run from the console as eurorad.py, ideally in the same directory.
+
+"""
 
 #Maximum number of results (reduce during development)
 max_results = 10000000000
+
+chromedriver_path = os.path.abspath(
+    os.path.join(
+        os.path.dirname(__file__),
+        "chromedriver"
+    )
+)
 
 def wait():
     "Wait a period of time. TODO: Random period of time"
@@ -23,26 +48,18 @@ def wait():
 
 def get_browser():
     "Return an instance of a Selenium browser."
-    browser_downloads = os.path.join(os.path.dirname(__file__),"downloads")
 
     options = webdriver.ChromeOptions()
     options.gpu = False
     options.headless = False
-    options.add_experimental_option("prefs", {
-        "download.default_directory" : browser_downloads,
-        'profile.default_content_setting_values.automatic_downloads': 2,
-    })
 
-    chrome_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),"../chromedriver")
-    print(chrome_path)
+    print(chromedriver_path)
 
     desired = options.to_capabilities()
     desired['loggingPrefs'] = { 'performance': 'ALL'}
     browser = webdriver.Chrome(desired_capabilities=desired,
-                               executable_path=chrome_path)
+                               executable_path=chromedriver_path)
     return browser
-
-browser = get_browser()
 
 def format_search_url(search_terms):
     "Format a URL for searching the given terms in Eurorad."
@@ -71,7 +88,7 @@ def get_search_results(search_terms, browser):
     out = []
     n_results = 0;
     while next_search_page:
-        print("using search page", next_search_page)
+        #print("using search page", next_search_page)
         browser.get(next_search_page)
         wait()
         results = list(extract_results_from_search_page(browser))
@@ -79,7 +96,8 @@ def get_search_results(search_terms, browser):
         for result in results:
             yield EuroRadCase(result)
         if n_results > max_results:
-            print("Exiting due to overload")
+            pass
+            #print("Exiting due to overload")
             break
         next_search_page = get_next_search_page(browser)
 
@@ -118,11 +136,12 @@ def metadata_from_result_page(browser):
     image_descriptions_text = []
 
     for image_description in image_descriptions:
-        print("printing", image_description)
+        #print("printing", image_description)
         try:
             browser.execute_script("arguments[0].scrollIntoView()", image_description)
         except:
-            print("didn't work")
+            pass
+            #print("didn't work")
         image_descriptions_text.append(image_description.get_attribute("innerHTML"))
 
     images_src = []
@@ -132,7 +151,7 @@ def metadata_from_result_page(browser):
         while image.get_attribute("src").startswith("data"):
             pass
         time.sleep(.1)
-        print("image", image.get_attribute("innerHTML"))
+        #print("image", image.get_attribute("innerHTML"))
         images_src.append(image.get_attribute("src").replace("_teaser_large",""))
 
     out = {}
@@ -212,11 +231,14 @@ def standard_to_metadata_format(standard_data):
 def metadata_from_search_terms(search_terms, browser):
     "Use browser to find the metadata from all search terms"
     result_pages = list(get_search_results(search_terms, browser))
-    print(result_pages)
+    #print(result_pages)
     for result_page in result_pages:
-        browser.get(result_page)
-        wait()
-        yield metadata_from_result_page(browser)
+        try:
+            browser.get(result_page)
+            wait()
+            yield metadata_from_result_page(browser)
+        except:
+            print("Failed for", result_page)
 
 class EuroRadCase():
     "An object representing an Eurorad case."
@@ -252,12 +274,12 @@ def find_new_eurorad_entries(old_data, new_cases):
 def output_candidate_entries(standard, columns, out_name, img_dir):
     "Save the candidate entries to a file."
     for record in standard:
-        record["images"] = [i for i in record["images"] if i["modality"] == "X-ray"]
+        record["images"] = [i for i in record["images"]]
     out_data = pd.DataFrame(standard_to_metadata_format(standard))
     for column in columns:
         if not column in out_data:
             out_data[column] = pd.NA
-    out_data = out_data[out_data["modality"] == "X-ray"]
+    #out_data = out_data[out_data["modality"] == "X-ray"]
     out_data = out_data.reindex(columns, axis=1)
     out_data.to_csv(out_name)
 
@@ -315,18 +337,46 @@ def clean_standard_data(standard_data):
 
 
 
-#Read in current metadata
-old_data = pd.read_table("../metadata.csv",sep=",")
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "search",
+        help="The search terms used to identify images"
+    )
+    parser.add_argument(
+        "newimg",
+        help="Folder to use when storing images. Should be empty or not exist yet.",
+        default="../candidate_images"
+    )
+    parser.add_argument(
+        "newcsv",
+         help="File to output candidate metadata.",
+         default="../candidate_metadata.csv"
+    )
+    parser.add_argument(
+        "csv",
+        help="Location of old metadata.",
+        default="../metadata.csv"
+    )
 
-#Build a generator of new case URLs
-new_cases = get_search_results(["COVID"],browser)
+    args = parser.parse_args()
 
-#Record metadata from the cases not already recorded
-found = find_new_eurorad_entries(old_data, new_cases)
+    browser = get_browser()
 
-#Save new data to disk for examination.
-output_candidate_entries(
-    clean_standard_data(eurorad_to_standard(found)),
-    old_data.columns,
-    "../candidate_metadata.csv",
-    "../candidate_images")
+    #Read in current metadata
+    old_data = pd.read_table(args.csv, sep=",")
+
+    #Build a generator of new case URLs
+    new_cases = get_search_results(args.search.split(" "),
+                                   browser)
+
+    #Record metadata from the cases not already recorded
+    found = find_new_eurorad_entries(old_data, new_cases)
+
+    #Save new data to disk for examination.
+    output_candidate_entries(
+        clean_standard_data(eurorad_to_standard(found)),
+        old_data.columns,
+        args.newcsv,
+        args.newimg
+    )
