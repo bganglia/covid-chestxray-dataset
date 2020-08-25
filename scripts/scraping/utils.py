@@ -20,14 +20,15 @@ def filename_from_url(url):
     "Determine the filename that the given url should be downloaded to."
     return os.path.basename(urlparse(url).path)
 
-def find_new_entries(old_data, new_cases):
+def find_new_entries(old_data, new_cases, exclude=[]):
     "Iterate through the URLs in new_cases and return metadata from the ones that are not already in old_data."
     new_data = []
     for new_case in new_cases:
-        if not new_case._in(old_data):
-            data = new_case.get_data()
-            new_data.append(data)
-            yield data
+        if not any(new_case.url.startswith(pattern) for pattern in exclude):
+            if not new_case._in(old_data):
+                data = new_case.get_data()
+                new_data.append(data)
+                yield data
 
 def deduplicate_filename(retrieve_filename, img_dir):
     print("Starting deduplicate")

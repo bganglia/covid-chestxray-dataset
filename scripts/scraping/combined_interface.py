@@ -614,7 +614,8 @@ def run_scrapers(
         results_from,
         newcsv,
         newimg,
-        handle_failure):
+        handle_failure,
+        exclude):
     #Read in current metadata
     old_data = pd.read_table(csv, sep=",")
 
@@ -629,7 +630,7 @@ def run_scrapers(
         raise ValueError("Invalid source")
 
     #Record metadata from the cases not already recorded
-    found = find_new_entries(old_data, new_cases)
+    found = find_new_entries(old_data, new_cases, exclude=exclude)
 
     #Save new data to disk for examination.
     output_candidate_entries(
@@ -638,7 +639,7 @@ def run_scrapers(
         newcsv,
         newimg,
         ResourceCache,
-        handle_failure=="retry"
+        handle_failure
     )
 
 if __name__ == "__main__":
@@ -684,6 +685,12 @@ if __name__ == "__main__":
         action="store_true",
         dest="retry"
     )
+    parser.add_argument(
+        "--exclude",
+        help="A file containing urls to exclude",
+        type=list,
+        default=[]
+    )
 
     args = parser.parse_args()
 
@@ -693,5 +700,6 @@ if __name__ == "__main__":
         args.using,
         args.csv,
         args.images,
-        args.retry
+        args.retry,
+        args.exclude
     )
