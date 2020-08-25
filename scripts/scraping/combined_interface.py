@@ -644,47 +644,54 @@ def run_scrapers(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "search",
-        help="The search terms used to identify images"
+        "--search",
+        help="The search terms used to identify images",
+        dest="search"
     )
     parser.add_argument(
-        "newimg",
+        "--images",
         help="Folder to use when storing images. Should be empty or not exist yet.",
-        default="../candidate_images"
+        default="../candidate_images",
+        dest="images"
     )
     parser.add_argument(
-        "newcsv",
-         help="File to output candidate metadata.",
-         default="../candidate_metadata.csv"
+        "--csv",
+        help="File to output candidate metadata.",
+        default="../candidate_metadata.csv",
+        dest="csv"
     )
     parser.add_argument(
-        "csv",
+        "--old",
         help="Location of old metadata.",
-        default="../metadata.csv"
+        default="../metadata.csv",
+        dest="old"
     )
     parser.add_argument(
-        "max_results",
+        "--max",
         help="Maximum number of results to retrieve.",
-        default=100
+        default=100,
+        dest="max"
     )
     parser.add_argument(
-        "results_from",
+        "--using",
         help="bing or internal search",
-        default="internal"
+        default="internal",
+        dest="using"
     )
     parser.add_argument(
-        "handle_failure",
+        "--retry",
         help="whether to retry inaccessible URLs",
-        default="dont_retry"
+        action="store_true",
+        dest="retry"
     )
 
     args = parser.parse_args()
 
     run_scrapers(
+        args.old,
+        args.max,
+        args.using,
         args.csv,
-        int(args.max_results),
-        args.results_from,
-        args.newcsv,
-        args.newimg,
-        args.handle_failure=="retry"
+        args.images,
+        args.retry
     )
