@@ -7,7 +7,7 @@ import tempfile
 chromedriver_path = os.path.abspath(
     os.path.join(
         os.path.dirname(__file__),
-        "../../chromedriver"
+        "chromedriver"
     )
 )
 
