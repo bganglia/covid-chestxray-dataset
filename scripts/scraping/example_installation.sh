@@ -10,4 +10,6 @@ wget https://chromedriver.storage.googleapis.com/84.0.4147.30/chromedriver_linux
 unzip chromedriver_linux64
 
 echo "installing required packages ... "
-pip install -r requirements.txt
+python -m venv scraping_environment
+source scraping_environment/bin/activate
+python -m pip install -r requirements.txt
