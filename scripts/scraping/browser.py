@@ -29,8 +29,6 @@ class Browser(webdriver.Chrome):
 
         options.add_extension('extension.crx')
 
-        #print(chromedriver_path)
-
         desired = options.to_capabilities()
         desired['loggingPrefs'] = { 'performance': 'ALL'}
 

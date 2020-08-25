@@ -175,8 +175,7 @@ class Scraper:
         return deduplicate_filename("saved.mhtml", self.folder)
     def retrieve(self, url):
         path=os.path.join(os.path.abspath(os.path.dirname(__file__)),"random_downloads")
-        #print(path)
-        browser = Browser(path) #architectural flaw
+        browser = Browser(path)
         browser.get_local(SimpleMHTMLCache.get(url))
         metadata = self.metadata_from_result_page(browser)
         mhtml = browser.save_mhtml(

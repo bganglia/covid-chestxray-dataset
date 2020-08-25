@@ -31,7 +31,6 @@ def find_new_entries(old_data, new_cases, exclude=[]):
                 yield data
 
 def deduplicate_filename(retrieve_filename, img_dir):
-    print("Starting deduplicate")
     files = os.listdir(img_dir)
     test_filename = retrieve_filename
     name, ext = os.path.splitext(retrieve_filename)
@@ -39,7 +38,6 @@ def deduplicate_filename(retrieve_filename, img_dir):
     while test_filename in files:
         test_filename = name + "-" + str(i) + ext
         i += 1
-    print("Done deduplicating filename")
     return test_filename
 
 def output_candidate_entries(standard, columns, out_name, img_dir, resource_cache, retry=False):
@@ -55,33 +53,25 @@ def output_candidate_entries(standard, columns, out_name, img_dir, resource_cach
             pickle.dump(all_records, handle)
         patient = clean_standard_data(record)
         all_filenames = []
-        #print(patient)
         for image in patient["images"]:
-            #print(image)
             for url in image["url"]:
                 retrieve_filename = deduplicate_filename(
                     filename_from_url(url),
                     img_dir
                 )
                 try:
-                    #print("ResourceCache", url, list(ResourceCache.data))
-                    #print("being transferred to", retrieve_filename)
                     full_destination = os.path.join(img_dir, retrieve_filename)
-                    #print("full_destination", full_destination)
                     source = resource_cache.get(url)
-                    #print("source", source)
                     shutil.copyfile(
                         source,
                         full_destination
                     )
+                    break
                 except Exception as e:
-                    print(e)
-                    #pdb.set_trace()
                     print("Oh no! Failed to download!")
                     raise
                 else:
                     all_filenames.append(retrieve_filename)
-                break
             else:
                 all_filenames.append("")
         out_df = out_df.append(
@@ -124,7 +114,6 @@ def clean_standard_data(standard_record):
             return "COVID-19"
         else:
             return finding
-    print(standard_record)
     sex = standard_record["patient"]["sex"]
     if not sex in ["M", "F"]:
         standard_record["patient"]["sex"] = sanitize_sex(sex)
@@ -154,7 +143,6 @@ def standard_to_metadata_format(standard_record, filenames):
         patient_row = {}
         #Update with all entries. 'misc' will be removed on conversion to dataframe.
         for key, value in dictionary_walk(standard_patient):
-            print(key, value)
             patient_row[key] = value
         patient_row["clinical_notes"] = (
             string_or_empty(patient_row.pop("clinical_history")) + " " + image["image_description"]
@@ -170,6 +158,5 @@ def standard_to_metadata_format(standard_record, filenames):
         patient_row["modality"] = modality
         patient_row["folder"] = folder
         patient_row["filename"] = filename
-        print(patient_row)
         all_rows.append(patient_row)
     return all_rows
