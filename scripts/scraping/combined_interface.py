@@ -225,6 +225,7 @@ class RadiopaediaMetadataCache(MetadataCache):
             time.sleep(5)
             other_notes = browser.find_element_by_xpath("//textarea[@class='select-all-js']").text
             print("Other notes:", other_notes)
+            browser.find_element_by_xpath("//button[@title='Close (Esc)']").click()
             return other_notes
         def get_location(browser):
             author_link = browser.find_element_by_xpath("//div[@class='author-info']/a").get_attribute("href")
