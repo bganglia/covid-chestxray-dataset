@@ -266,8 +266,12 @@ class RadiopaediaMetadataCache(MetadataCache):
         characteristics = [i.text for i in browser.find_elements_by_xpath("//div[@class='data-item']")]
         characteristic_dict = {}
         for characteristic in characteristics:
-            name, value = characteristic.split(": ")
-            characteristic_dict[name] = value
+            try:
+                name, value = characteristic.split(": ")
+            except ValueError:
+                print("Failed to process characteristics:", characteristic)
+            else:
+                characteristic_dict[name] = value
 
         presentation = try_or_nothing(
             lambda: browser.find_element_by_xpath("//div[@class='case-section view-section']").text
@@ -695,6 +699,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    with open(args.exclude) as handle:
+        exclude_prefixes = list(handle)
+
     run_scrapers(
         args.old,
         args.max,
@@ -702,5 +709,5 @@ if __name__ == "__main__":
         args.csv,
         args.images,
         args.retry,
-        args.exclude
+        exclude_prefixes
     )
