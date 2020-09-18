@@ -93,8 +93,9 @@ subscription_key_path=os.path.join(
     "subscription_key.txt"
 )
 subscription_key = None
+client = None
 if os.path.exists(subscription_key_path):
-    with open("subscription_key.txt") as handle:
+    with open(subscription_key_path) as handle:
         subscription_key = next(handle).strip()
         print("Using subscription key", subscription_key)
 
@@ -407,6 +408,8 @@ class Case():
         if self.data is None:
             self.data = self.extract_data()
         return self.data
+    def sanitize_url(self):
+        return self.url
 
 class RadiopaediaCase(Case):
     "An object representing an Eurorad case."
@@ -455,6 +458,11 @@ class RadiopaediaCase(Case):
             "document":standard_document
         }
         return data
+    def sanitize_url(self):
+        if "?" in self.url:
+            return self.url[:self.url.index("?")]
+        else:
+            return self.url
 
 class EuroRadCase(Case):
     "An object representing an Eurorad case."
@@ -538,7 +546,7 @@ class Radiopaedia(Repository):
     def format_internal_search_url(cls, search_terms):
         "Format a URL for searching the given terms in Radiopaedia."
         def format_radiopaedia_search_url(search_terms, scope):
-            base_url = "https://radiopaedia.org/search?utf8=%E2%9C%93&q={}&scope={}&lang=us&system=Chest"
+            base_url = "https://radiopaedia.org/search?utf8=%E2%9C%93&q={}&scope={}&lang=us&system=Chest&sort=date_of_publication&utf8=✓"
             return base_url.format("+".join(search_terms), scope)
 
         def format_search_url(search_terms):
@@ -676,7 +684,8 @@ if __name__ == "__main__":
         "--max",
         help="Maximum number of results to retrieve.",
         default=100,
-        dest="max"
+        dest="max",
+        type=int
     )
     parser.add_argument(
         "--using",
@@ -692,15 +701,15 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--exclude",
-        help="A file containing urls to exclude",
-        type=list,
-        default=[]
+        help="A file containing urls to exclude"
     )
 
     args = parser.parse_args()
 
+    if args.exclude is None:
+        exclude_prefixes = []
     with open(args.exclude) as handle:
-        exclude_prefixes = list(handle)
+        exclude_prefixes = list(map(str.strip, handle))
 
     run_scrapers(
         args.old,
