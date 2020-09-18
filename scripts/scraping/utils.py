@@ -6,6 +6,7 @@ from subprocess import run
 import time
 from tqdm import tqdm
 import pickle
+import pdb
 import os
 import pandas as pd
 
@@ -24,11 +25,22 @@ def find_new_entries(old_data, new_cases, exclude=[]):
     "Iterate through the URLs in new_cases and return metadata from the ones that are not already in old_data."
     new_data = []
     for new_case in new_cases:
-        if not any(new_case.url.startswith(pattern) for pattern in exclude):
+        url = new_case.sanitize_url()
+        if not any(url == pattern for pattern in exclude):
             if not new_case._in(old_data):
                 data = new_case.get_data()
                 new_data.append(data)
+                print("url", url)
+                print("is new")
                 yield data
+            else:
+                print("url", url)
+                print("already in metadata")
+        else:
+            print("url", url)
+            for pattern_url in exclude:
+                if url == pattern_url:
+                    print("matches", pattern_url)
 
 def deduplicate_filename(retrieve_filename, img_dir):
     files = os.listdir(img_dir)
@@ -66,21 +78,23 @@ def output_candidate_entries(standard, columns, out_name, img_dir, resource_cach
                         source,
                         full_destination
                     )
-                    break
                 except Exception as e:
                     print("Oh no! Failed to download!")
                     raise
                 else:
                     all_filenames.append(retrieve_filename)
+                    break
             else:
                 all_filenames.append("")
+        new_row = standard_to_metadata_format(
+            patient,
+            all_filenames
+        )
         out_df = out_df.append(
-            standard_to_metadata_format(
-                patient,
-                all_filenames
-            ),
+            new_row,
             ignore_index=True
         )
+        #pdb.set_trace()
         out_df.to_csv(out_name)
 
 def wget(src, filename):
