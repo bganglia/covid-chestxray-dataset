@@ -80,7 +80,6 @@ def output_candidate_entries(standard, columns, out_name, img_dir, resource_cach
                     )
                 except Exception as e:
                     print("Oh no! Failed to download!")
-                    raise
                 else:
                     all_filenames.append(retrieve_filename)
                     break
