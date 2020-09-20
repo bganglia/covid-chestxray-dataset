@@ -1,0 +1,8 @@
+selenium
+pillow
+scipy
+tqdm
+pandas
+numpy
+azure-cognitiveservices-search-websearch
+msrest
