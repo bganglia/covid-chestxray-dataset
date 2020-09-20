@@ -708,8 +708,9 @@ if __name__ == "__main__":
 
     if args.exclude is None:
         exclude_prefixes = []
-    with open(args.exclude) as handle:
-        exclude_prefixes = list(map(str.strip, handle))
+    elif os.path.exists(args.exclude):
+        with open(args.exclude) as handle:
+            exclude_prefixes = list(map(str.strip, handle))
 
     run_scrapers(
         args.old,
