@@ -706,11 +706,11 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.exclude is None:
-        exclude_prefixes = []
-    elif os.path.exists(args.exclude):
+    if args.exclude is not None and os.path.exists(args.exclude):
         with open(args.exclude) as handle:
             exclude_prefixes = list(map(str.strip, handle))
+    else:
+        exclude_prefixes = []
 
     run_scrapers(
         args.old,
